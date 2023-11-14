@@ -3,6 +3,7 @@ package com.eebax.geofencing;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -19,7 +20,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         // TODO: This method is called when the BroadcastReceiver is receiving
         // an Intent broadcast.
-       // Toast.makeText(context, "Geofence triggered", Toast.LENGTH_SHORT).show();
+        // Toast.makeText(context, "Geofence triggered", Toast.LENGTH_SHORT).show();
 
         NotificationHelper notificationHelper = new NotificationHelper(context);
 
@@ -30,13 +31,17 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
             return;
         }
 
-
         List<Geofence> geofenceList = geofencingEvent.getTriggeringGeofences();
-        for (Geofence geofence: geofenceList) {
-            Log.d(TAG, "onReceive: " + geofence.getRequestId());
+
+        if (geofenceList != null) {
+            for (Geofence geofence: geofenceList) {
+                Log.d(TAG, "onReceive: " + geofence.getRequestId());
+            }
         }
 //        Location location = geofencingEvent.getTriggeringLocation();
         int transitionType = geofencingEvent.getGeofenceTransition();
+
+        Log.d(TAG, "geofence transition: " + transitionType);
 
         switch (transitionType) {
             case Geofence.GEOFENCE_TRANSITION_ENTER:

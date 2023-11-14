@@ -25,22 +25,33 @@ public class GeofenceHelper extends ContextWrapper {
         return new GeofencingRequest.Builder().addGeofence(geofence).setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER).build();
     }
 
-    public Geofence getGeofence(String ID, LatLng latLng, float radius, int transitionTypes){
+    public Geofence getGeofence(String ID, LatLng latLng, float radius){
 
-        return new Geofence.Builder().setCircularRegion(latLng.latitude, latLng.longitude, radius).setRequestId(ID).setTransitionTypes(transitionTypes).setLoiteringDelay(5000).setExpirationDuration(Geofence.NEVER_EXPIRE).build();
+        return new Geofence.Builder()
+                .setCircularRegion(
+                        latLng.latitude,
+                        latLng.longitude,
+                        radius)
+                .setRequestId(ID)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
+                .setLoiteringDelay(5000)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .build();
     }
 
     public PendingIntent getPendingIntent() {
-
         if (pendingIntent != null){
             return pendingIntent;
         }
 
         Intent intent = new Intent(this, GeofenceBroadcastReceiver.class);
-        pendingIntent = PendingIntent.getBroadcast(this, 2607, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        // Use FLAG_IMMUTABLE unless your functionality depends on the PendingIntent being mutable.
+        pendingIntent = PendingIntent.getBroadcast(this, 2607, intent, PendingIntent.FLAG_MUTABLE);
 
         return pendingIntent;
     }
+
 
     public String getErrorString(Exception e) {
         if (e instanceof ApiException) {

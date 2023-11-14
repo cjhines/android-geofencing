@@ -7,7 +7,11 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
@@ -41,7 +45,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     GeofencingClient geofencingClient;
     private GeofenceHelper geofenceHelper;
 
-    private float GEOFENCE_RADIUS = 200;
+    private float GEOFENCE_RADIUS = 100;
     private String GEOFENCE_ID = "SOME_GEOFENCE_ID";
 
     private int FINE_LOCATION_ACCESS_REQUEST_CODE = 10001;
@@ -77,7 +81,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
 
         // Add a marker in Sydney and move the camera
-        LatLng bonn = new LatLng(50.7333, 7.1032);
+        LatLng bonn = new LatLng(52.457477990983655, 13.511691831851453);
         mMap.addMarker(new MarkerOptions().position(bonn).title("Marker in Bonn"));
         float zoomLevel = 15.0f; //This goes up to 21
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(bonn, zoomLevel
@@ -166,9 +170,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void addGeofence(LatLng latLng, float radius) {
-        Geofence geofence = geofenceHelper.getGeofence(GEOFENCE_ID, latLng, radius, Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_DWELL | Geofence.GEOFENCE_TRANSITION_EXIT);
+        Geofence geofence = geofenceHelper.getGeofence(GEOFENCE_ID, latLng, radius);
 
         GeofencingRequest geofencingRequest = geofenceHelper.getGeofencingRequest(geofence);
+        Intent serviceIntent = new Intent(this, GeofenceForegroundService.class);
         PendingIntent pendingIntent = geofenceHelper.getPendingIntent();
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -181,6 +186,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Check if the service is not already running
+            if (isServiceNotRunning(GeofenceForegroundService.class)) {
+                startForegroundService(serviceIntent);
+            }
+            startForegroundService(new Intent(this, GeofenceForegroundService.class));
+        }
+
         geofencingClient.addGeofences(geofencingRequest, pendingIntent).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void unused) {
@@ -193,6 +207,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Log.d(TAG, "onFailure: " + e);
             }
         });
+    }
+
+    private boolean isServiceNotRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                Log.d(TAG, "isServiceNotRunning false ");
+                return false;
+            }
+        }
+        Log.d(TAG, "isServiceNotRunning false ");
+        return true;
     }
 
     private void addMarker(LatLng latLng){
